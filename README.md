@@ -2,7 +2,6 @@ ChinaDNS
 ========
 
 [![Build Status]][Travis CI]
-[![Coverage Status]][Coverage]
 
 Traditional way to bypass DNS poisoning is to send all queries to
 a foreign DNS server via VPN. However some Chinese websites will get
@@ -169,16 +168,14 @@ Please visit [Issue Tracker]
 Mailing list: http://groups.google.com/group/shadowsocks
 
 
-[Build Status]:         https://travis-ci.org/clowwindy/ChinaDNS.svg?branch=master
-[ChinaDNS]:             https://github.com/clowwindy/ChinaDNS
-[Coverage Status]:      https://jenkins.shadowvpn.org/result/chinadns
-[Coverage]:             https://jenkins.shadowvpn.org/job/ChinaDNS/ws/src/index.html
-[Download]:             https://github.com/clowwindy/ChinaDNS/releases
-[Issue Tracker]:        https://github.com/clowwindy/ChinaDNS/issues?state=open
-[Download precompiled]: https://github.com/clowwindy/ChinaDNS/releases
-[Download a release]:   https://github.com/clowwindy/ChinaDNS/releases
+[Build Status]:         https://travis-ci.org/shadowsocks/ChinaDNS.svg?branch=master
+[ChinaDNS]:             https://github.com/shadowsocks/ChinaDNS
+[Download]:             https://github.com/shadowsocks/ChinaDNS-Python/releases
+[Issue Tracker]:        https://github.com/shadowsocks/ChinaDNS/issues?state=open
+[Download precompiled]: https://github.com/shadowsocks/ChinaDNS/releases
+[Download a release]:   https://github.com/shadowsocks/ChinaDNS/releases
 [SDK]:                  http://wiki.openwrt.org/doc/howto/obtain.firmware.sdk
 [ShadowVPN]:            https://github.com/clowwindy/ShadowVPN
 [Tomato toolchain]:     http://downloads.linksysbycisco.com/downloads/WRT54GL_v4.30.11_11_US.tgz
-[Travis CI]:            https://travis-ci.org/clowwindy/ChinaDNS
+[Travis CI]:            https://travis-ci.org/shadowsocks/ChinaDNS
 [DNS pointer mutation method]: https://gist.github.com/klzgrad/f124065c0616022b65e5
