@@ -68,7 +68,7 @@ typedef struct {
 
 
 // avoid malloc and free
-#define BUF_SIZE 512
+#define BUF_SIZE 1024
 static char global_buf[BUF_SIZE];
 static char compression_buf[BUF_SIZE];
 static int verbose = 0;
