@@ -48,7 +48,6 @@ typedef struct {
 
 typedef struct {
   uint16_t id;
-  uint16_t old_id;
   struct sockaddr *addr;
   socklen_t addrlen;
 } id_addr_t;
@@ -104,7 +103,7 @@ static void dns_handle_remote();
 static const char *hostname_from_question(ns_msg msg);
 static int should_filter_query(ns_msg msg, int is_chn);
 
-#define ID_ADDR_QUEUE_LEN 128
+#define ID_ADDR_QUEUE_LEN 1024
 // use a queue instead of hash here since it's not long
 static id_addr_t id_addr_queue[ID_ADDR_QUEUE_LEN];
 static int id_addr_queue_pos = 0;
@@ -473,28 +472,15 @@ static void dns_handle_local() {
       free(src_addr);
       return;
     }
-    // parse DNS query id
-    query_id = ns_msg_id(msg);
     if (verbose) {
       question_hostname = hostname_from_question(msg);
       if (question_hostname)
         LOG("query %s\n", question_hostname);
     }
-    // assign a new id
-    uint16_t new_id;
-    do {
-      struct timeval tv;
-      gettimeofday(&tv, 0);
-      int randombits = (tv.tv_sec << 8) ^ tv.tv_usec;
-      new_id = randombits & 0xffff;
-    } while (queue_lookup(new_id));
-
-    uint16_t ns_new_id = htons(new_id);
-    memcpy(global_buf, &ns_new_id, 2);
-
+    // parse DNS query id
+    query_id = ns_msg_id(msg);
     id_addr_t id_addr;
-    id_addr.id = new_id;
-    id_addr.old_id = query_id;
+    id_addr.id = query_id;
     id_addr.addr = src_addr;
     id_addr.addrlen = src_addrlen;
     queue_add(id_addr);
@@ -545,7 +531,7 @@ static void dns_handle_remote() {
     id_addr_t *id_addr = queue_lookup(query_id);
     if (id_addr) {
       id_addr->addr->sa_family = AF_INET;
-      uint16_t ns_old_id = htons(id_addr->old_id);
+      uint16_t ns_old_id = htons(id_addr->id);
       memcpy(global_buf, &ns_old_id, 2);
       r = should_filter_query(msg, is_chn);
       if (r == 0) {
@@ -578,16 +564,13 @@ static void queue_add(id_addr_t id_addr) {
   id_addr_t old_id_addr = id_addr_queue[id_addr_queue_pos];
   free(old_id_addr.addr);
   id_addr_queue[id_addr_queue_pos] = id_addr;
+  uint16_t ns_new_id = htons(id_addr_queue_pos + 1);
+  memcpy(global_buf, &ns_new_id, 2);
   id_addr_queue_pos = (id_addr_queue_pos + 1) % ID_ADDR_QUEUE_LEN;
 }
 
 static id_addr_t *queue_lookup(uint16_t id) {
-  int i;
-  for (i = 0; i < ID_ADDR_QUEUE_LEN; i++) {
-    if (id_addr_queue[i].id == id)
-      return id_addr_queue + i;
-  }
-  return NULL;
+  return id_addr_queue + (id - 1);;
 }
 
 static char *hostname_buf = NULL;
