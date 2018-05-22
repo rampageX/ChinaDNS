@@ -67,8 +67,8 @@ typedef struct {
 } net_list_t;
 
 
-// avoid malloc and free
-#define BUF_SIZE 1024
+// default max EDNS.0 UDP packet from RFC5625
+#define BUF_SIZE 4096
 static char global_buf[BUF_SIZE];
 static char compression_buf[BUF_SIZE];
 static int verbose = 0;
