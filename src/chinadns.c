@@ -71,8 +71,8 @@ typedef struct {
   socklen_t addrlen;
 } delay_buf_t;
 
-// avoid malloc and free
-#define BUF_SIZE 2048
+// default max EDNS.0 UDP packet from RFC5625
+#define BUF_SIZE 4096
 static char global_buf[BUF_SIZE];
 static int verbose = 0;
 
