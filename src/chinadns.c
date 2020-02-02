@@ -75,7 +75,6 @@ typedef struct {
 #define BUF_SIZE 4096
 static char global_buf[BUF_SIZE];
 static int verbose = 0;
-static int ecs_only = 0;
 
 static const char *default_dns_server = "8.8.8.8";
 static char *dns_server = NULL;
@@ -94,15 +93,15 @@ static char *listen_port = NULL;
 #define NETMASK_MIN 0
 static char *chnroute_file = NULL;
 static net_list_t chnroute_list;
-static int parse_chnroute();
-static int test_ip_in_list(struct in_addr ip, const net_list_t *netlist);
+//static int parse_chnroute();
+//static int test_ip_in_list(struct in_addr ip, const net_list_t *netlist);
 
 static int dns_init_sockets();
 static void dns_handle_local();
 static void dns_handle_remote();
 
 static const char *hostname_from_question(ns_msg msg);
-static int should_filter_query(ns_msg msg, int is_chn);
+//static int should_filter_query(ns_msg msg, int is_chn);
 
 #define ID_ADDR_QUEUE_LEN 1024
 // use a queue instead of hash here since it's not long
@@ -116,7 +115,7 @@ static id_addr_t *queue_lookup(uint16_t id);
 static delay_buf_t delay_queue[DELAY_QUEUE_LEN];
 static void schedule_delay(uint16_t query_id, const char *buf, size_t buflen,
                            struct sockaddr *addr, socklen_t addrlen);
-static void check_and_send_delay();
+//static void check_and_send_delay();
 static void free_delay(int pos);
 // next position for first, not used
 static int delay_queue_first = 0;
@@ -129,6 +128,7 @@ static char *edns_client_ip = NULL;
 static ecs_list_t ecs_list;
 static int resolve_ecs_addrs();
 static void add_ecs_data(char *buf, struct in_addr *addr, uint8_t mask);
+static int ecs_only = 0;
 
 static int check_result(char *buf, size_t buflen);
 
@@ -190,8 +190,8 @@ int main(int argc, char **argv) {
   memset(&id_addr_queue, 0, sizeof(id_addr_queue));
   if (0 != parse_args(argc, argv))
     return EXIT_FAILURE;
-  if (0 != parse_chnroute())
-    return EXIT_FAILURE;
+  //if (0 != parse_chnroute())
+  //  return EXIT_FAILURE;
   if (0 != resolve_dns_server())
     return EXIT_FAILURE;
   if (0 != resolve_ecs_addrs())
@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
       ERR("select");
       return EXIT_FAILURE;
     }
-    check_and_send_delay();
+    //check_and_send_delay();
     if (FD_ISSET(local_sock, &errorset)) {
       // TODO getsockopt(..., SO_ERROR, ...);
       VERR("local_sock error\n");
@@ -250,7 +250,7 @@ static int setnonblock(int sock) {
 
 static int parse_args(int argc, char **argv) {
   int ch;
-  while ((ch = getopt(argc, argv, "hb:p:s:c:y:e:nvV")) != -1) {
+  while ((ch = getopt(argc, argv, "hb:p:s:y:e:nvV")) != -1) {
     switch (ch) {
       case 'h':
         usage();
@@ -264,9 +264,9 @@ static int parse_args(int argc, char **argv) {
       case 's':
         dns_server = strdup(optarg);
         break;
-      case 'c':
-        chnroute_file = strdup(optarg);
-        break;
+      //case 'c':
+      //  chnroute_file = strdup(optarg);
+      //  break;
       case 'y':
         result_delay = atof(optarg);
         break;
@@ -293,10 +293,10 @@ static int parse_args(int argc, char **argv) {
   if (listen_port == NULL) {
     listen_port = strdup(default_listen_port);
   }
-  if (chnroute_file == NULL) {
-    VERR("chnroute file not specified.\n");
-    return 1;
-  }
+  //if (chnroute_file == NULL) {
+  //  VERR("chnroute file not specified.\n");
+  //  return 1;
+  //}
   if (edns_client_ip == NULL) {
     VERR("EDNS Client Subnet not specified.\n");
     return 1;
@@ -335,96 +335,96 @@ static int cmp_net_mask(const void *a, const void *b) {
   return -1;
 }
 
-static int parse_chnroute() {
-  FILE *fp;
-  char line_buf[32];
-  char *line;
-  size_t len = sizeof(line_buf);
-  char net[32];
-  chnroute_list.entries = 0;
-  int i = 0;
-  int cidr;
+//static int parse_chnroute() {
+//  FILE *fp;
+//  char line_buf[32];
+//  char *line;
+//  size_t len = sizeof(line_buf);
+//  char net[32];
+//  chnroute_list.entries = 0;
+//  int i = 0;
+//  int cidr;
 
-  fp = fopen(chnroute_file, "rb");
-  if (fp == NULL) {
-    ERR("fopen");
-    VERR("Can't open chnroute: %s\n", chnroute_file);
-    return -1;
-  }
-  while ((line = fgets(line_buf, len, fp))) {
-    chnroute_list.entries++;
-  }
+//  fp = fopen(chnroute_file, "rb");
+//  if (fp == NULL) {
+//    ERR("fopen");
+//    VERR("Can't open chnroute: %s\n", chnroute_file);
+//    return -1;
+//  }
+//  while ((line = fgets(line_buf, len, fp))) {
+//    chnroute_list.entries++;
+//  }
 
-  chnroute_list.nets = calloc(chnroute_list.entries, sizeof(net_mask_t));
-  if (0 != fseek(fp, 0, SEEK_SET)) {
-    VERR("fseek");
-    return -1;
-  }
-  while ((line = fgets(line_buf, len, fp))) {
-    char *sp_pos;
-    sp_pos = strchr(line, '\r');
-    if (sp_pos) *sp_pos = 0;
-    sp_pos = strchr(line, '\n');
-    if (sp_pos) *sp_pos = 0;
-    sp_pos = strchr(line, '/');
-    if (sp_pos) {
-      *sp_pos = 0;
-      cidr = atoi(sp_pos + 1);
-      if (cidr > 0) {
-        chnroute_list.nets[i].mask = (1 << (32 - cidr)) - 1;
-      } else {
-        chnroute_list.nets[i].mask = UINT32_MAX;
-      }
-    } else {
-      chnroute_list.nets[i].mask = NETMASK_MIN;
-    }
-    if (0 == inet_aton(line, &chnroute_list.nets[i].net)) {
-      VERR("invalid addr %s in %s:%d\n", line, chnroute_file, i + 1);
-      return 1;
-    }
-    i++;
-  }
+//  chnroute_list.nets = calloc(chnroute_list.entries, sizeof(net_mask_t));
+//  if (0 != fseek(fp, 0, SEEK_SET)) {
+//    VERR("fseek");
+//    return -1;
+//  }
+//  while ((line = fgets(line_buf, len, fp))) {
+//    char *sp_pos;
+//    sp_pos = strchr(line, '\r');
+//    if (sp_pos) *sp_pos = 0;
+//    sp_pos = strchr(line, '\n');
+//    if (sp_pos) *sp_pos = 0;
+//    sp_pos = strchr(line, '/');
+//    if (sp_pos) {
+//      *sp_pos = 0;
+//      cidr = atoi(sp_pos + 1);
+//      if (cidr > 0) {
+//        chnroute_list.nets[i].mask = (1 << (32 - cidr)) - 1;
+//      } else {
+//        chnroute_list.nets[i].mask = UINT32_MAX;
+//      }
+//    } else {
+//      chnroute_list.nets[i].mask = NETMASK_MIN;
+//    }
+//    if (0 == inet_aton(line, &chnroute_list.nets[i].net)) {
+//      VERR("invalid addr %s in %s:%d\n", line, chnroute_file, i + 1);
+//      return 1;
+//    }
+//    i++;
+//  }
 
-  qsort(chnroute_list.nets, chnroute_list.entries, sizeof(net_mask_t),
-        cmp_net_mask);
+//  qsort(chnroute_list.nets, chnroute_list.entries, sizeof(net_mask_t),
+//        cmp_net_mask);
 
-  fclose(fp);
-  return 0;
-}
+//  fclose(fp);
+//  return 0;
+//}
 
-static int test_ip_in_list(struct in_addr ip, const net_list_t *netlist) {
+//static int test_ip_in_list(struct in_addr ip, const net_list_t *netlist) {
   // binary search
-  int l = 0, r = netlist->entries - 1;
-  int m, cmp;
-  if (netlist->entries == 0)
-    return 0;
-  net_mask_t ip_net;
-  ip_net.net = ip;
-  while (l <= r) {
-    m = (l + r) >> 1;
-    cmp = cmp_net_mask(&netlist->nets[m], &ip_net);
-    if (cmp < 0)
-      l = m + 1;
-    else if (cmp > 0)
-      r = m - 1;
-    else
-      return 1;
-#ifdef DEBUG
-    DLOG("l=%d, r=%d\n", l, r);
-    DLOG("%s, %d\n", inet_ntoa(netlist->nets[m].net), netlist->nets[m].mask);
-#endif
-  }
-#ifdef DEBUG
-  DLOG("nets: %x <-> %x\n", ntohl(netlist->nets[l - 1].net.s_addr),
-       ntohl(ip.s_addr));
-  DLOG("mask: %x\n", netlist->nets[l - 1].mask);
-#endif
-  if (0 == l || (ntohl(ip.s_addr) > (ntohl(netlist->nets[l - 1].net.s_addr)
-                                     | netlist->nets[l - 1].mask))) {
-    return 0;
-  }
-  return 1;
-}
+//  int l = 0, r = netlist->entries - 1;
+//  int m, cmp;
+//  if (netlist->entries == 0)
+//    return 0;
+//  net_mask_t ip_net;
+//  ip_net.net = ip;
+//  while (l <= r) {
+//    m = (l + r) >> 1;
+//    cmp = cmp_net_mask(&netlist->nets[m], &ip_net);
+//    if (cmp < 0)
+//      l = m + 1;
+//    else if (cmp > 0)
+//      r = m - 1;
+//    else
+//      return 1;
+//#ifdef DEBUG
+//    DLOG("l=%d, r=%d\n", l, r);
+//    DLOG("%s, %d\n", inet_ntoa(netlist->nets[m].net), netlist->nets[m].mask);
+//#endif
+//  }
+//#ifdef DEBUG
+//  DLOG("nets: %x <-> %x\n", ntohl(netlist->nets[l - 1].net.s_addr),
+//       ntohl(ip.s_addr));
+//  DLOG("mask: %x\n", netlist->nets[l - 1].mask);
+//#endif
+//  if (0 == l || (ntohl(ip.s_addr) > (ntohl(netlist->nets[l - 1].net.s_addr)
+//                                     | netlist->nets[l - 1].mask))) {
+//    return 0;
+//  }
+//  return 1;
+//}
 
 static int dns_init_sockets() {
   struct addrinfo hints;
@@ -509,7 +509,8 @@ static void dns_handle_remote() {
   uint16_t query_id;
   ssize_t len;
   const char *question_hostname;
-  int r, is_chn;
+  //int r, is_chn;
+  int r;
   ns_msg msg;
   len = recvfrom(remote_sock, global_buf, BUF_SIZE, 0, src_addr, &src_len);
   if (len > 0) {
@@ -525,19 +526,20 @@ static void dns_handle_remote() {
       if (question_hostname)
         LOG("answer %s -> ", question_hostname);
     }
-    is_chn = check_result(global_buf, len);
-    if (-1 == is_chn) {
-      if (verbose)
-        printf("Fake, drop\n");
-      free(src_addr);
-      return;
-    }
+    //is_chn = check_result(global_buf, len);
+    //if (-1 == is_chn) {
+    //  if (verbose)
+    //    printf("Fake, drop\n");
+    //  free(src_addr);
+    //  return;
+    //}
     id_addr_t *id_addr = queue_lookup(query_id);
     if (id_addr) {
       id_addr->addr->sa_family = AF_INET;
       uint16_t ns_old_id = htons(id_addr->id);
       memcpy(global_buf, &ns_old_id, 2);
-      r = should_filter_query(msg, is_chn);
+      //r = should_filter_query(msg, is_chn);
+      r = 0;
       if (r == 0) {
         if (verbose)
           printf("pass\n");
@@ -604,108 +606,108 @@ static const char *hostname_from_question(ns_msg msg) {
   return NULL;
 }
 
-static int should_filter_query(ns_msg msg, int is_chn) {
-  ns_rr rr;
-  int rrnum, rrmax;
-  rrmax = ns_msg_count(msg, ns_s_an);
-  if (verbose) {
-    printf("(%s) ", is_chn ? "C" : "F");
-    if (rrmax == 0)
-      printf("Empty, ");
-  }
-  for (rrnum = 0; rrnum < rrmax; rrnum++) {
-    if (local_ns_parserr(&msg, ns_s_an, rrnum, &rr)) {
-      ERR("local_ns_parserr");
-      return 0;
-    }
-    u_int type;
-    const u_char *rd;
-    type = ns_rr_type(rr);
-    rd = ns_rr_rdata(rr);
-    if (type == ns_t_a) {
-      if (verbose)
-        printf("%s, ", inet_ntoa(*(struct in_addr *)rd));
-      if (test_ip_in_list(*(struct in_addr *)rd, &chnroute_list)) {
-        return is_chn ? 0 : -1;
-      } else {
-        return is_chn ? 1 : -1;
-      }
-    }
-  }
-  if (verbose && rrmax > 0)
-    printf("Non-IPv4, ");
-  return 0;
-}
+//static int should_filter_query(ns_msg msg, int is_chn) {
+//  ns_rr rr;
+//  int rrnum, rrmax;
+//  rrmax = ns_msg_count(msg, ns_s_an);
+//  if (verbose) {
+//    printf("(%s) ", is_chn ? "C" : "F");
+//    if (rrmax == 0)
+//      printf("Empty, ");
+//  }
+//  for (rrnum = 0; rrnum < rrmax; rrnum++) {
+//    if (local_ns_parserr(&msg, ns_s_an, rrnum, &rr)) {
+//      ERR("local_ns_parserr");
+//      return 0;
+//    }
+//    u_int type;
+//    const u_char *rd;
+//    type = ns_rr_type(rr);
+//    rd = ns_rr_rdata(rr);
+//    if (type == ns_t_a) {
+//      if (verbose)
+//        printf("%s, ", inet_ntoa(*(struct in_addr *)rd));
+//      if (test_ip_in_list(*(struct in_addr *)rd, &chnroute_list)) {
+//        return is_chn ? 0 : -1;
+//      } else {
+//        return is_chn ? 1 : -1;
+//      }
+//    }
+//  }
+//  if (verbose && rrmax > 0)
+//    printf("Non-IPv4, ");
+//  return 0;
+//}
 
-static void schedule_delay(uint16_t query_id, const char *buf, size_t buflen,
-                           struct sockaddr *addr, socklen_t addrlen) {
-  int i;
-  int found = 0;
-  struct timeval now;
-  gettimeofday(&now, 0);
+//static void schedule_delay(uint16_t query_id, const char *buf, size_t buflen,
+//                           struct sockaddr *addr, socklen_t addrlen) {
+//  int i;
+//  int found = 0;
+//  struct timeval now;
+//  gettimeofday(&now, 0);
 
-  delay_buf_t *delay_buf = &delay_queue[delay_queue_last];
+//  delay_buf_t *delay_buf = &delay_queue[delay_queue_last];
 
   // first search for existed item with query_id and replace it
-  for (i = delay_queue_first;
-       i != delay_queue_last;
-       i = (i + 1) % DELAY_QUEUE_LEN) {
-    delay_buf_t *delay_buf2 = &delay_queue[i];
-    if (delay_buf2->id == query_id) {
-      free_delay(i);
-      delay_buf = &delay_queue[i];
-      found = 1;
-    }
-  }
+//  for (i = delay_queue_first;
+//       i != delay_queue_last;
+//       i = (i + 1) % DELAY_QUEUE_LEN) {
+//    delay_buf_t *delay_buf2 = &delay_queue[i];
+//    if (delay_buf2->id == query_id) {
+//      free_delay(i);
+//      delay_buf = &delay_queue[i];
+//      found = 1;
+//    }
+//  }
 
-  delay_buf->id = query_id;
-  delay_buf->ts = now;
-  delay_buf->buf = malloc(buflen);
-  memcpy(delay_buf->buf, buf, buflen);
-  delay_buf->buflen = buflen;
-  delay_buf->addr = malloc(addrlen);
-  memcpy(delay_buf->addr, addr, addrlen);
-  delay_buf->addrlen = addrlen;
+//  delay_buf->id = query_id;
+//  delay_buf->ts = now;
+//  delay_buf->buf = malloc(buflen);
+//  memcpy(delay_buf->buf, buf, buflen);
+//  delay_buf->buflen = buflen;
+//  delay_buf->addr = malloc(addrlen);
+//  memcpy(delay_buf->addr, addr, addrlen);
+//  delay_buf->addrlen = addrlen;
 
   // then append to queue
-  if (!found) {
-    delay_queue_last = (delay_queue_last + 1) % DELAY_QUEUE_LEN;
-    if (delay_queue_last == delay_queue_first) {
-      free_delay(delay_queue_first);
-      delay_queue_first = (delay_queue_first + 1) % DELAY_QUEUE_LEN;
-    }
-  }
-}
+//  if (!found) {
+//    delay_queue_last = (delay_queue_last + 1) % DELAY_QUEUE_LEN;
+//    if (delay_queue_last == delay_queue_first) {
+//      free_delay(delay_queue_first);
+//      delay_queue_first = (delay_queue_first + 1) % DELAY_QUEUE_LEN;
+//    }
+//  }
+//}
 
-float time_diff(struct timeval t0, struct timeval t1) {
-  return (t1.tv_sec - t0.tv_sec) +
-      (t1.tv_usec - t0.tv_usec) / 1000000.0f;
-}
+//float time_diff(struct timeval t0, struct timeval t1) {
+//  return (t1.tv_sec - t0.tv_sec) +
+//      (t1.tv_usec - t0.tv_usec) / 1000000.0f;
+//}
 
-static void check_and_send_delay() {
-  struct timeval now;
-  int i;
-  gettimeofday(&now, 0);
-  for (i = delay_queue_first;
-       i != delay_queue_last;
-       i = (i + 1) % DELAY_QUEUE_LEN) {
-    delay_buf_t *delay_buf = &delay_queue[i];
-    if (time_diff(delay_buf->ts, now) > result_delay) {
-      if (-1 == sendto(local_sock, delay_buf->buf, delay_buf->buflen, 0,
-                       delay_buf->addr, delay_buf->addrlen))
-        ERR("sendto");
-      free_delay(i);
-      delay_queue_first = (delay_queue_first + 1) % DELAY_QUEUE_LEN;
-    } else {
-      break;
-    }
-  }
-}
+//static void check_and_send_delay() {
+//  struct timeval now;
+//  int i;
+//  gettimeofday(&now, 0);
+//  for (i = delay_queue_first;
+//       i != delay_queue_last;
+//       i = (i + 1) % DELAY_QUEUE_LEN) {
+//    delay_buf_t *delay_buf = &delay_queue[i];
+//    if (time_diff(delay_buf->ts, now) > result_delay) {
+//      if (-1 == sendto(local_sock, delay_buf->buf, delay_buf->buflen, 0,
+//                       delay_buf->addr, delay_buf->addrlen))
+//        ERR("sendto");
+//      free_delay(i);
+//      delay_queue_first = (delay_queue_first + 1) % DELAY_QUEUE_LEN;
+//    } else {
+//      break;
+//    }
+//  }
+//}
 
-static void free_delay(int pos) {
-  free(delay_queue[pos].buf);
-  free(delay_queue[pos].addr);
-}
+//static void free_delay(int pos) {
+//  free(delay_queue[pos].buf);
+//  free(delay_queue[pos].addr);
+//}
 
 static int resolve_ecs_addrs() {
   char* token;
@@ -720,23 +722,24 @@ static int resolve_ecs_addrs() {
   token = strtok(edns_client_ip, ",");
   while (token) {
     inet_aton(token, &ecs_list.ecs_addrs[i].addrs);
-    ecs_list.ecs_addrs[i].is_chn = test_ip_in_list(ecs_list.ecs_addrs[i].addrs,
-                                                   &chnroute_list);
-    if (ecs_list.ecs_addrs[i].is_chn) {
-      has_chn = 1;
-    } else {
-      has_foreign = 1;
-    }
+    //ecs_list.ecs_addrs[i].is_chn = test_ip_in_list(ecs_list.ecs_addrs[i].addrs,
+    //                                               &chnroute_list);
+    //ecs_list.ecs_addrs[i].is_chn = 0;
+  //  if (ecs_list.ecs_addrs[i].is_chn) {
+  //    has_chn = 1;
+  //  } else {
+  //    has_foreign = 1;
+  //  }
     token = strtok(NULL, ",");
     i++;
   }
-  if (!ecs_only) {
-      if (!(has_chn && has_foreign)) {
-        VERR("You should have at least one Chinese Client Subnet and"
-             " one foreign Client Subnet\n");
-        return 1;
-      }
-  }
+  //if (!ecs_only) {
+  //    if (!(has_chn && has_foreign)) {
+  //      VERR("You should have at least one Chinese Client Subnet and"
+  //           " one foreign Client Subnet\n");
+  //      return 1;
+  //    }
+  //}
   return 0;
 }
 
@@ -772,20 +775,20 @@ static void add_ecs_data(char *buf_ptr, struct in_addr *addr, uint8_t mask) {
   memcpy(buf_ptr, addr, addrl);
 }
 
-static int check_result(char *buf, size_t buflen) {
-  int i;
-  size_t addrl = sizeof(struct in_addr);
-  struct in_addr *addr = malloc(addrl);
-  memcpy(addr, buf + buflen - addrl, addrl);
-  for (i = 0; i < ecs_list.entries; i++) {
-    if (addr->s_addr == ecs_list.ecs_addrs[i].addrs.s_addr) {
-      free(addr);
-      return ecs_list.ecs_addrs[i].is_chn;
-    }
-  }
-  free(addr);
-  return -1;
-}
+//static int check_result(char *buf, size_t buflen) {
+//  int i;
+//  size_t addrl = sizeof(struct in_addr);
+//  struct in_addr *addr = malloc(addrl);
+//  memcpy(addr, buf + buflen - addrl, addrl);
+//  for (i = 0; i < ecs_list.entries; i++) {
+//    if (addr->s_addr == ecs_list.ecs_addrs[i].addrs.s_addr) {
+//      free(addr);
+//      return ecs_list.ecs_addrs[i].is_chn;
+//    }
+//  }
+//  free(addr);
+//  return -1;
+//}
 
 static void usage() {
   printf("%s\n", "\
@@ -793,13 +796,10 @@ usage: chinadns [-c CHNROUTE_FILE] [-e CLIENT_SUBNET]\n\
        [-b BIND_ADDR] [-p BIND_PORT] [-s DNS] [-h] [-v] [-V]\n\
 Forward DNS requests.\n\
 \n\
-  -c CHNROUTE_FILE      path to china route file\n\
-  -y DELAY_TIME         delay time for foreign result, default: 0.3\n\
   -b BIND_ADDR          address that listens, default: 0.0.0.0\n\
   -p BIND_PORT          port that listens, default: 53\n\
   -s DNS                DNS server to use, default: 8.8.8.8\n\
   -e ADDRs              set edns-client-subnet\n\
-  -n                    just set edns-client-subnet, no judge\n\
   -v                    verbose logging\n\
   -h                    show this help message and exit\n\
   -V                    print version and exit\n\
