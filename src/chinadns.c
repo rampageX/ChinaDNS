@@ -75,6 +75,7 @@ typedef struct {
 #define BUF_SIZE 4096
 static char global_buf[BUF_SIZE];
 static int verbose = 0;
+static int ecs_only = 0;
 
 static const char *default_dns_server = "8.8.8.8";
 static char *dns_server = NULL;
@@ -249,7 +250,7 @@ static int setnonblock(int sock) {
 
 static int parse_args(int argc, char **argv) {
   int ch;
-  while ((ch = getopt(argc, argv, "hb:p:s:c:y:e:vV")) != -1) {
+  while ((ch = getopt(argc, argv, "hb:p:s:c:y:e:nvV")) != -1) {
     switch (ch) {
       case 'h':
         usage();
@@ -271,6 +272,9 @@ static int parse_args(int argc, char **argv) {
         break;
       case 'e':
         edns_client_ip = strdup(optarg);
+        break;
+      case 'n':
+        ecs_only = 1;
         break;
       case 'v':
         verbose = 1;
@@ -726,10 +730,12 @@ static int resolve_ecs_addrs() {
     token = strtok(NULL, ",");
     i++;
   }
-  if (!(has_chn && has_foreign)) {
-    VERR("You should have at least one Chinese Client Subnet and"
-         " one foreign Client Subnet\n");
-    return 1;
+  if (!ecs_only) {
+      if (!(has_chn && has_foreign)) {
+        VERR("You should have at least one Chinese Client Subnet and"
+             " one foreign Client Subnet\n");
+        return 1;
+      }
   }
   return 0;
 }
@@ -793,6 +799,7 @@ Forward DNS requests.\n\
   -p BIND_PORT          port that listens, default: 53\n\
   -s DNS                DNS server to use, default: 8.8.8.8\n\
   -e ADDRs              set edns-client-subnet\n\
+  -n                    just set edns-client-subnet, no judge\n\
   -v                    verbose logging\n\
   -h                    show this help message and exit\n\
   -V                    print version and exit\n\
