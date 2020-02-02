@@ -25,7 +25,7 @@ Install
     [Download a release].
 
         ./configure && make
-        src/chinadns -m -c chnroute.txt
+        src/chinadns -p 1053 -s 8.8.8.8 -e 202.96.134.33 -v
 
 * OpenWRT
 
@@ -63,7 +63,7 @@ Usage
 
 * Linux / Unix
     Recommand using with option "-m" ([DNS pointer mutation method])
-    Run `sudo chinadns -m -c chnroute.txt` on your local machine. ChinaDNS creates a
+    Run `sudo chinadns -p 1053 -s 127.0.0.1:5153 -e 202.96.134.33 -v` on your local machine. ChinaDNS creates a
     UDP DNS Server at `0.0.0.0:53`.
 
 * OpenWRT
@@ -117,30 +117,19 @@ add a redirect rule for TCP:
 Advanced
 --------
 
-    usage: chinadns [-h] [-l IPLIST_FILE] [-b BIND_ADDR] [-p BIND_PORT]
-           [-c CHNROUTE_FILE] [-s DNS] [-v]
-    Forward DNS requests.
+usage: chinadns [-c CHNROUTE_FILE] [-e CLIENT_SUBNET]
+       [-b BIND_ADDR] [-p BIND_PORT] [-s DNS] [-e ECS] [-h] [-v] [-V]
+Forward DNS requests.
 
-    -h, --help            show this help message and exit
-    -l IPLIST_FILE        path to ip blacklist file
-    -c CHNROUTE_FILE      path to china route file
-                          if not specified, CHNRoute will be turned off
-    -d                    enable bi-directional CHNRoute filter
-    -y                    delay time for suspects, default: 0.3
-    -b BIND_ADDR          address that listens, default: 127.0.0.1
-    -p BIND_PORT          port that listens, default: 53
-    -s DNS                DNS servers to use, default:
-                          114.114.114.114,208.67.222.222:443,8.8.8.8
-    -m                    Using DNS compression pointer mutation
-                          (backlist and delaying would be disabled)
-    -v                    verbose logging
+  -b BIND_ADDR          address that listens, default: 0.0.0.0
+  -p BIND_PORT          port that listens, default: 53
+  -s DNS                DNS server to use, default: 8.8.8.8
+  -e ADDRs              set edns-client-subnet
+  -v                    verbose logging
+  -h                    show this help message and exit
+  -V                    print version and exit
 
-About chnroute
---------------
-
-You can generate latest chnroute.txt using this command:
-
-    curl 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | grep ipv4 | grep CN | awk -F\| '{ printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > chnroute.txt
+Online help: <https://github.com/rampageX/ChinaDNS-ECS>
 
 
 License
