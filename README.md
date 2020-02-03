@@ -88,7 +88,7 @@ Usage
 
 Test if it works correctly:
 
-    $ dig @192.168.1.1 www.youtube.com -p5353
+    $ dig @192.168.1.1 www.youtube.com -p 1053
     ; <<>> DiG 9.8.3-P1 <<>> @127.0.0.1 www.google.com -p5353
     ; (1 server found)
     ;; global options: +cmd
@@ -117,7 +117,8 @@ add a redirect rule for TCP:
 Advanced
 --------
 
-usage: chinadns [-c CHNROUTE_FILE] [-e CLIENT_SUBNET]
+```
+usage: chinadns [-e CLIENT_SUBNET]
        [-b BIND_ADDR] [-p BIND_PORT] [-s DNS] [-e ECS] [-h] [-v] [-V]
 Forward DNS requests.
 
@@ -130,7 +131,7 @@ Forward DNS requests.
   -V                    print version and exit
 
 Online help: <https://github.com/rampageX/ChinaDNS-ECS>
-
+```
 
 License
 -------
