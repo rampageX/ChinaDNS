@@ -1,21 +1,7 @@
-ChinaDNS
+DNS-ECS-Forcer
 ========
 
-[![Build Status]][Travis CI]
-
-Traditional way to bypass DNS poisoning is to send all queries to
-a foreign DNS server via VPN. However some Chinese websites will get
-bad results if they have CDNs outside the country.
-
-The second way is to maintain a list of domains of which you want to
-resolve from local DNS or foreign DNS. This list changes too often,
-taking too much effort to maintain.
-
-ChinaDNS automatically queries local DNS servers to resolve Chinese domains
-and queries foreign DNS servers to resolve foreign domains. It is smart
-enough to work only with a Chinese IP range file, which doesn't change often.
-
-In order to bypass IP blocking, you SHOULD use VPN software like [ShadowVPN].
+Add user defined ECS to dns request.
 
 Install
 -------
@@ -25,22 +11,7 @@ Install
     [Download a release].
 
         ./configure && make
-        src/chinadns -p 1053 -s 8.8.8.8 -e 202.96.134.33 -v
-
-* OpenWRT
-
-    * [Download precompiled] for OpenWRT trunk and CPU: ar71xx, brcm63xx,
-      brcm47xx, ramips_24kec. Open an issue if you think your CPU is a popular
-      one but not listed here.
-    * If you use other CPU or other OpenWRT versions, build yourself:
-      cd into [SDK] root, then
-
-            pushd package
-            git clone https://github.com/clowwindy/ChinaDNS.git
-            popd
-            make menuconfig # select Network/ChinaDNS
-            make -j
-            make V=99 package/ChinaDNS/openwrt/compile
+        src/dns-ecs-forcer -p 1053 -s 8.8.8.8 -e 202.96.134.33 -v
 
 * Tomoto
 
@@ -50,76 +21,63 @@ Install
       `~/WRT54GL-US_v4.30.11_11/tools/` to `/opt`, then
 
             export PATH=/opt/brcm/hndtools-mipsel-uclibc/bin/:/opt/brcm/hndtools-mipsel-linux/bin/:$PATH
-            git clone https://github.com/clowwindy/ChinaDNS.git
-            cd ChinaDNS
+            git clone https://github.com/rampageX/dns-ecs-forcer.git
+            cd dns-ecs-forcer
             ./autogen.sh && ./configure --host=mipsel-linux --enable-static && make
 
-* Windows
-
-    [Download] Python exe version.
 
 Usage
 -----
 
 * Linux / Unix
-    Recommand using with option "-m" ([DNS pointer mutation method])
-    Run `sudo chinadns -p 1053 -s 127.0.0.1:5153 -e 202.96.134.33 -v` on your local machine. ChinaDNS creates a
-    UDP DNS Server at `0.0.0.0:53`.
-
-* OpenWRT
-
-        opkg install ChinaDNS_1.x.x_ar71xx.ipk
-        /etc/init.d/chinadns start
-        /etc/init.d/chinadns enable
-
-    Invoke the "enable" command to run the initscript on boot
-
-    (Optional) We strongly recommend you to set ChinaDNS as a upstream DNS
-    server for dnsmasq instead of using ChinaDNS directly:
-
-    1. Run `/etc/init.d/chinadns stop`
-    2. Remove the 2 lines containing `iptables` in `/etc/init.d/chinadns`.
-    3. Update `/etc/dnsmasq.conf` to use only 127.0.0.1#5353:
-
-            no-resolv
-            server=127.0.0.1#5353
-
-    4. Restart chinadns and dnsmasq
+    Run `sudo dns-ecs-forcer -p 1053 -s 8.8.8.8 -e 202.96.134.33 -v` on your local machine. DNS-ECS-Forcer creates a UDP DNS Server at `0.0.0.0:1053`. Note: The upsteam dns server must support ECS.
 
 Test if it works correctly:
 
     $ dig @192.168.1.1 www.youtube.com -p 1053
-    ; <<>> DiG 9.8.3-P1 <<>> @127.0.0.1 www.google.com -p5353
-    ; (1 server found)
-    ;; global options: +cmd
-    ;; Got answer:
-    ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 29845
-    ;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0
-    
-    ;; QUESTION SECTION:
-    ;www.youtube.com.		IN	A
-    
-    ;; ANSWER SECTION:
-    www.youtube.com.	21569	IN	CNAME	youtube-ui.l.google.com.
-    youtube-ui.l.google.com. 269	IN	A	216.58.220.174
+	; <<>> DiG 9.12.4 <<>> @192.168.1.1 -p 1053 www.youtube.com
+	;; global options: +cmd
+	;; Got answer:
+	;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 49828
+	;; flags: qr rd ra; QUERY: 1, ANSWER: 17, AUTHORITY: 0, ADDITIONAL: 1
 
-    ;; Query time: 74 msec
-    ;; SERVER: 127.0.0.1#5353(127.0.0.1)
-    ;; WHEN: Fri Jan 30 18:37:57 2015
-    ;; MSG SIZE  rcvd: 83
+	;; OPT PSEUDOSECTION:
+	; EDNS: version: 0, flags:; udp: 512
+	; CLIENT-SUBNET: 202.96.134.33/32/24
+	;; QUESTION SECTION:
+	;www.youtube.com.		IN	A
 
-Currently ChinaDNS only supports UDP. Builtin OpenWRT init script works with
-dnsmasq, which handles TCP. If you use it directly without dnsmasq, you need to
-add a redirect rule for TCP:
+	;; ANSWER SECTION:
+	www.youtube.com.	21599	IN	CNAME	youtube-ui.l.google.com.
+	youtube-ui.l.google.com. 299	IN	A	172.217.25.110
+	youtube-ui.l.google.com. 299	IN	A	172.217.24.142
+	youtube-ui.l.google.com. 299	IN	A	172.217.26.14
+	youtube-ui.l.google.com. 299	IN	A	172.217.25.206
+	youtube-ui.l.google.com. 299	IN	A	172.217.27.78
+	youtube-ui.l.google.com. 299	IN	A	172.217.31.142
+	youtube-ui.l.google.com. 299	IN	A	172.217.26.46
+	youtube-ui.l.google.com. 299	IN	A	172.217.161.78
+	youtube-ui.l.google.com. 299	IN	A	172.217.31.174
+	youtube-ui.l.google.com. 299	IN	A	172.217.161.46
+	youtube-ui.l.google.com. 299	IN	A	172.217.175.46
+	youtube-ui.l.google.com. 299	IN	A	172.217.174.110
+	youtube-ui.l.google.com. 299	IN	A	172.217.175.110
+	youtube-ui.l.google.com. 299	IN	A	172.217.175.78
+	youtube-ui.l.google.com. 299	IN	A	172.217.175.14
+	youtube-ui.l.google.com. 299	IN	A	216.58.197.206
 
-    iptables -t nat -A PREROUTING -p tcp --dport 53 -j DNAT --to-destination 8.8.8.8:53
+	;; Query time: 828 msec
+	;; SERVER: 127.0.0.1#5153(127.0.0.1)
+	;; WHEN: Tue Mar 24 19:12:38 CST 2020
+	;; MSG SIZE  rcvd: 346
+
+Note the `CLIENT-SUBNET: 202.96.134.33/32/24` section. Currently DNS-ECS-Forcer only supports UDP.
 
 Advanced
 --------
 
 ```
-usage: chinadns [-e CLIENT_SUBNET]
-       [-b BIND_ADDR] [-p BIND_PORT] [-s DNS] [-e ECS] [-h] [-v] [-V]
+usage: dns-ecs-forcer [-e CLIENT_SUBNET] [-b BIND_ADDR] [-p BIND_PORT] [-s DNS] [-e ECS] [-h] [-v] [-V]
 Forward DNS requests.
 
   -b BIND_ADDR          address that listens, default: 0.0.0.0
@@ -157,15 +115,3 @@ Please visit [Issue Tracker]
 
 Mailing list: http://groups.google.com/group/shadowsocks
 
-
-[Build Status]:         https://travis-ci.org/shadowsocks/ChinaDNS.svg?branch=master
-[ChinaDNS]:             https://github.com/shadowsocks/ChinaDNS
-[Download]:             https://github.com/shadowsocks/ChinaDNS-Python/releases
-[Issue Tracker]:        https://github.com/shadowsocks/ChinaDNS/issues?state=open
-[Download precompiled]: https://github.com/shadowsocks/ChinaDNS/releases
-[Download a release]:   https://github.com/shadowsocks/ChinaDNS/releases
-[SDK]:                  http://wiki.openwrt.org/doc/howto/obtain.firmware.sdk
-[ShadowVPN]:            https://github.com/clowwindy/ShadowVPN
-[Tomato toolchain]:     http://downloads.linksysbycisco.com/downloads/WRT54GL_v4.30.11_11_US.tgz
-[Travis CI]:            https://travis-ci.org/shadowsocks/ChinaDNS
-[DNS pointer mutation method]: https://gist.github.com/klzgrad/f124065c0616022b65e5
