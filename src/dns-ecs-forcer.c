@@ -1,4 +1,4 @@
-/*  ChinaDNS
+/*  DNS-ECS-Forcer
     Copyright (C) 2014-2015 clowwindy <clowwindy42@gmail.com>
     Copyright (C) 2015-2017 Jian Chang <aa65535@live.com>
 
@@ -242,7 +242,7 @@ static int parse_args(int argc, char **argv) {
         verbose = 1;
         break;
       case 'V':
-        printf("ChinaDNS %s\n", PACKAGE_VERSION);
+        printf("DNS-ECS-Forcer %s\n", PACKAGE_VERSION);
         exit(0);
     }
   }
@@ -514,7 +514,7 @@ static void add_ecs_data(char *buf_ptr, struct in_addr *addr, uint8_t mask) {
 
 static void usage() {
   printf("%s\n", "\
-usage: chinadns [-c CHNROUTE_FILE] [-e CLIENT_SUBNET]\n\
+usage: dns-ecs-forcer [-e CLIENT_SUBNET]\n\
        [-b BIND_ADDR] [-p BIND_PORT] [-s DNS] [-h] [-v] [-V]\n\
 Forward DNS requests.\n\
 \n\
@@ -526,5 +526,5 @@ Forward DNS requests.\n\
   -h                    show this help message and exit\n\
   -V                    print version and exit\n\
 \n\
-Online help: <https://github.com/rampageX/ChinaDNS-ECS>\n");
+Online help: <https://github.com/rampageX/dns-ecs-forcer>\n");
 }

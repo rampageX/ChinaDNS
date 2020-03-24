@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([ChinaDNS], [2.0.0], [aa65535@live.com])
-AC_CONFIG_SRCDIR([src/chinadns.c])
+AC_INIT([DNS-ECS-Forcer], [2.0.0], [aa65535@live.com])
+AC_CONFIG_SRCDIR([src/dns-ecs-forcer.c])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([foreign -Wall])

@@ -1,3 +1,3 @@
-bin_PROGRAMS = chinadns
+bin_PROGRAMS = dns-ecs-forcer
 
-chinadns_SOURCES = chinadns.c local_ns_parser.c local_ns_parser.h
+dns-ecs-forcer_SOURCES = dns-ecs-forcer.c local_ns_parser.c local_ns_parser.h

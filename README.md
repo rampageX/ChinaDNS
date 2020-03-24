@@ -130,7 +130,7 @@ Forward DNS requests.
   -h                    show this help message and exit
   -V                    print version and exit
 
-Online help: <https://github.com/rampageX/ChinaDNS-ECS>
+Online help: <https://github.com/rampageX/dns-ecs-forcer>
 ```
 
 License
